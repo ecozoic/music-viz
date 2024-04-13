@@ -2,9 +2,11 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import genCodeChallenge from './auth/code-challenge';
+import requestUserAuthorization from './auth/user-authorization';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
     <>
@@ -21,6 +23,14 @@ function App() {
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
+        <button onClick={() => {
+              const login = async () => {
+                const challenge = await genCodeChallenge();
+                requestUserAuthorization(challenge);
+              }
+          
+              login().catch(console.error);
+        }}>Login with Spotify</button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
