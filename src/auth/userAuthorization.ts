@@ -5,7 +5,7 @@ const requestUserAuthorization = (codeChallenge: string) => {
   const params = {
     response_type: 'code',
     client_id: CLIENT_ID,
-    scope: 'user-read-private user-read-email', // TODO streaming
+    scope: 'user-read-private user-read-email streaming',
     code_challenge_method: 'S256',
     code_challenge: codeChallenge,
     redirect_uri: REDIRECT_URI, // TODO redirect URI

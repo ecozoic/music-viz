@@ -1,5 +1,3 @@
-import AuthStore from './store';
-
 // https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow
 const getCodeVerifier = (length: number = 64) => {
   const possible =
@@ -21,12 +19,11 @@ const base64encode = (input: ArrayBuffer) => {
     .replace(/\//g, '_');
 };
 
-const genCodeChallenge = async () => {
+async function genCodeVerifierAndChallenge(): Promise<[string, string]> {
   const verifier = getCodeVerifier();
-  const store = new AuthStore();
-  store.setCodeVerifier(verifier);
   const hashed = await sha256(verifier);
-  return base64encode(hashed);
-};
+  const challenge = base64encode(hashed);
+  return [verifier, challenge];
+}
 
-export default genCodeChallenge;
+export default genCodeVerifierAndChallenge;

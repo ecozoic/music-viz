@@ -1,5 +1,5 @@
 import { useRouteError } from 'react-router-dom';
-import hasOwnProperty from '../utils/has-own-property';
+import hasOwnProperty from '../utils/hasOwnProperty';
 
 function useRouteErrorWithMessage(): [unknown, string | null] {
   const error = useRouteError();

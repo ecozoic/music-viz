@@ -3,10 +3,16 @@ import AuthStore from './store';
 
 const TOKEN_URL = new URL('https://accounts.spotify.com/api/token');
 
-export const getAccessToken = async (code: string) => {
-  const store = new AuthStore();
-  const codeVerifier = store.getCodeVerifier();
+type SpotifyTokenResponse = {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+};
 
+export async function getAccessToken(
+  code: string,
+  verifier: string,
+): Promise<[string, string, number]> {
   const payload = {
     method: 'POST',
     headers: {
@@ -17,20 +23,15 @@ export const getAccessToken = async (code: string) => {
       grant_type: 'authorization_code',
       code,
       redirect_uri: REDIRECT_URI,
-      code_verifier: codeVerifier,
+      code_verifier: verifier,
     }),
   };
 
   const body = await window.fetch(TOKEN_URL, payload);
-  const response = await body.json(); // TODO error
+  const response = (await body.json()) as SpotifyTokenResponse; // TODO error
 
-  store.clearCodeVerifier();
-  store.setTokens(
-    response.access_token,
-    response.refresh_token,
-    response.expires_in,
-  );
-};
+  return [response.access_token, response.refresh_token, response.expires_in];
+}
 
 export const getRefreshToken = async () => {
   const store = new AuthStore();
@@ -49,7 +50,7 @@ export const getRefreshToken = async () => {
   };
 
   const body = await window.fetch(TOKEN_URL, payload);
-  const response = await body.json();
+  const response = (await body.json()) as SpotifyTokenResponse;
 
   store.setTokens(
     response.access_token,

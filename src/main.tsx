@@ -6,6 +6,8 @@ import App from './App.tsx';
 import ErrorPage from './routes/ErrorPage.tsx';
 import { PATHS } from './routes/constants.ts';
 import Callback from './routes/Callback.tsx';
+import { store } from './app/store';
+import { Provider } from 'react-redux';
 
 import './index.css';
 
@@ -23,6 +25,8 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <Provider store={store}>
+      <RouterProvider router={router} />
+    </Provider>
   </React.StrictMode>,
 );

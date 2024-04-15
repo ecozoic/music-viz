@@ -1,4 +1,4 @@
-import { getRefreshToken } from '../auth/access-token';
+import { getRefreshToken } from '../auth/accessToken';
 import AuthStore from '../auth/store';
 
 type SpotifyObject = {
