@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from './constants';
+import { expiresInToTimestamp } from './accessToken';
 
 class AuthStore {
   setCodeVerifier(verifier: string): void {
@@ -26,7 +27,7 @@ class AuthStore {
     window.localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
     window.localStorage.setItem(
       STORAGE_KEYS.EXPIRES_IN,
-      (Date.now() + expiresIn * 1000).toString(),
+      expiresInToTimestamp(expiresIn).toString(),
     );
   }
 
@@ -44,13 +45,6 @@ class AuthStore {
       throw new Error('No access token set');
     }
     return token;
-  }
-
-  isAccessTokenExpired(): boolean {
-    const expiresIn = Number(
-      window.localStorage.getItem(STORAGE_KEYS.EXPIRES_IN) ?? '0',
-    );
-    return Date.now() > expiresIn;
   }
 
   logout(): void {

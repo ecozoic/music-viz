@@ -1,18 +1,19 @@
-import { useState } from 'react';
-
-import { getRefreshToken } from './auth/accessToken';
-import SpotifyClient from './api/client';
 import { useAppDispatch, useAppSelector } from './app/hooks';
-import { logout, requestUserAuthorization } from './features/auth/authSlice';
+import {
+  logout,
+  requestUserAuthorization,
+  refreshToken,
+} from './features/auth/authSlice';
+import useSpotifyClient from './hooks/useSpotifyClient';
 
 import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const dispatch = useAppDispatch();
+  const client = useSpotifyClient();
 
   return (
     <>
@@ -26,9 +27,6 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
         {!isAuthenticated && (
           <button
             onClick={() => {
@@ -47,30 +45,18 @@ function App() {
             Logout
           </button>
         )}
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
         {isAuthenticated && (
           <>
             <button
               onClick={() => {
-                const request = async () => {
-                  await getRefreshToken();
-                };
-
-                request();
+                dispatch(refreshToken());
               }}
             >
               Request Refresh Token
             </button>
             <button
               onClick={() => {
-                const request = async () => {
-                  const client = new SpotifyClient();
-                  await client.me();
-                };
-
-                request();
+                client.me();
               }}
             >
               Request Profile
@@ -78,9 +64,6 @@ function App() {
           </>
         )}
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   );
 }

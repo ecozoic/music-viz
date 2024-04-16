@@ -1,5 +1,4 @@
 import { CLIENT_ID, REDIRECT_URI } from './constants';
-import AuthStore from './store';
 
 const TOKEN_URL = new URL('https://accounts.spotify.com/api/token');
 
@@ -8,6 +7,14 @@ type SpotifyTokenResponse = {
   refresh_token: string;
   expires_in: number;
 };
+
+export function expiresInToTimestamp(expiresIn: number): number {
+  return Date.now() + expiresIn * 1000;
+}
+
+export function isAccessTokenExpired(expiresIn: number): boolean {
+  return Date.now() > expiresIn;
+}
 
 export async function getAccessToken(
   code: string,
@@ -33,10 +40,9 @@ export async function getAccessToken(
   return [response.access_token, response.refresh_token, response.expires_in];
 }
 
-export const getRefreshToken = async () => {
-  const store = new AuthStore();
-  const refreshToken = store.getRefreshToken();
-
+export async function getRefreshToken(
+  refreshToken: string,
+): Promise<[string, string, number]> {
   const payload = {
     method: 'POST',
     headers: {
@@ -52,9 +58,5 @@ export const getRefreshToken = async () => {
   const body = await window.fetch(TOKEN_URL, payload);
   const response = (await body.json()) as SpotifyTokenResponse;
 
-  store.setTokens(
-    response.access_token,
-    response.refresh_token,
-    response.expires_in,
-  );
-};
+  return [response.access_token, response.refresh_token, response.expires_in];
+}

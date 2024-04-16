@@ -11,19 +11,18 @@ function Callback() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  // TODO: redux
   useEffect(() => {
-    const timerID = window.setTimeout(() => {
+    const initiateLogin = async () => {
       if (code != null) {
-        dispatch(login(code)).then(() => {
+        const result = await dispatch(login(code));
+        // conditionally canceled thunk dispatches no action but still resolves promise
+        if (result.meta.requestStatus === 'fulfilled') {
           navigate(PATHS.ROOT);
-        });
+        }
       }
-    }, 100);
-
-    return () => {
-      window.clearTimeout(timerID);
     };
+
+    initiateLogin();
   }, []);
 
   return null;

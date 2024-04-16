@@ -1,41 +1,52 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-// import type { PayloadAction } from '@reduxjs/toolkit';
-import genCodeVerifierAndChallenge from '../../auth/codeChallenge';
+
+import genSpotifyCodeVerifierAndChallenge from '../../auth/codeChallenge';
 import requestSpotifyUserAuthorization from '../../auth/userAuthorization';
 import AuthStore from '../../auth/store';
-import type { RootState } from '../../app/store';
-import { getAccessToken } from '../../auth/accessToken';
+import {
+  getAccessToken,
+  expiresInToTimestamp,
+  getRefreshToken,
+} from '../../auth/accessToken';
+import SpotifyClient from '../../api/client';
+import { AppDispatch, RootState } from '../../app/store';
 
 export interface AuthState {
   isAuthenticated: boolean;
-  codeChallenge: string | null;
+  isLoginPending: boolean;
+  displayName: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  expiresIn: number;
 }
 
 const initialState: AuthState = {
   isAuthenticated: false,
-  codeChallenge: null,
+  isLoginPending: false,
+  accessToken: null,
+  displayName: null,
+  refreshToken: null,
+  expiresIn: 0,
 };
 
-const genCodeChallenge = createAsyncThunk(
-  'auth/genCodeChallengeStatus',
+const genCodeVerifierAndChallenge = createAsyncThunk(
+  'auth/genCodeVerifierAndChallengeStatus',
   async () => {
-    return await genCodeVerifierAndChallenge();
+    return await genSpotifyCodeVerifierAndChallenge();
   },
 );
 
-// TODO: return value of dispatch then
 export const requestUserAuthorization = createAsyncThunk(
   'auth/requestUserAuthorizationStatus',
-  async (_, thunkAPI) => {
-    return thunkAPI.dispatch(genCodeChallenge()).then(() => {
-      const state = thunkAPI.getState() as RootState;
-      requestSpotifyUserAuthorization(state.auth.codeChallenge!);
-    });
+  async (_arg, thunkAPI) => {
+    const [_verifier, challenge] = await thunkAPI
+      .dispatch(genCodeVerifierAndChallenge())
+      .unwrap();
+    requestSpotifyUserAuthorization(challenge);
   },
 );
-
-export const login = createAsyncThunk(
-  'auth/loginStatus',
+const requestAccessToken = createAsyncThunk(
+  'auth/requestAccessTokenStatus',
   async (code: string, _thunkAPI) => {
     const store = new AuthStore();
     const verifier = store.getCodeVerifier();
@@ -44,31 +55,99 @@ export const login = createAsyncThunk(
   },
 );
 
+export const refreshToken = createAsyncThunk(
+  'auth/refreshTokenStatus',
+  async (_arg, thunkAPI) => {
+    const state = thunkAPI.getState() as RootState;
+    const token = state.auth.refreshToken;
+    return await getRefreshToken(token!);
+  },
+);
+
+const requestCurrentUserProfile = createAsyncThunk(
+  'auth/requestCurrentUserProfileStatus',
+  async (_arg, thunkAPI) => {
+    // TODO: spotify client redux integration
+    const client = new SpotifyClient(
+      thunkAPI.getState as () => RootState,
+      thunkAPI.dispatch as AppDispatch,
+      refreshToken,
+    );
+    return await client.me();
+  },
+);
+
+export const login = createAsyncThunk(
+  'auth/loginStatus',
+  async (code: string, thunkAPI) => {
+    await thunkAPI.dispatch(requestAccessToken(code));
+    await thunkAPI.dispatch(requestCurrentUserProfile()).unwrap();
+  },
+  {
+    condition: (_code: string, { getState }) => {
+      // login dispatched in useEffect so add condition
+      // to prevent double firing of thunk in dev mode
+      const state = getState() as RootState;
+      return !state.auth.isLoginPending;
+    },
+  },
+);
+
 export const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    login: (state) => {
-      state.isAuthenticated = true;
-    },
     logout: (state) => {
       state.isAuthenticated = false;
+      state.accessToken = null;
+      state.expiresIn = 0;
+      state.refreshToken = null;
+      state.displayName = null;
       const store = new AuthStore();
       store.logout();
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(genCodeChallenge.fulfilled, (state, action) => {
-      const [verifier, challenge] = action.payload;
-      state.codeChallenge = challenge;
+    builder.addCase(genCodeVerifierAndChallenge.fulfilled, (_state, action) => {
+      const [verifier, _challenge] = action.payload;
       // persist verifier in local storage so we can reference it after redirect to callback url
       const store = new AuthStore();
       store.setCodeVerifier(verifier);
     });
 
-    builder.addCase(login.fulfilled, (state, action) => {
-      state.isAuthenticated = true;
+    builder.addCase(requestAccessToken.fulfilled, (state, action) => {
       const [accessToken, refreshToken, expiresIn] = action.payload;
+      state.isAuthenticated = true;
+      state.accessToken = accessToken;
+      state.refreshToken = refreshToken;
+      state.expiresIn = expiresInToTimestamp(expiresIn);
+      const store = new AuthStore();
+      store.clearCodeVerifier();
+      store.setTokens(accessToken, refreshToken, expiresIn);
+    });
+
+    builder.addCase(requestCurrentUserProfile.fulfilled, (state, action) => {
+      state.displayName = action.payload.display_name;
+    });
+
+    builder.addCase(login.pending, (state) => {
+      state.isLoginPending = true;
+    });
+
+    builder.addCase(login.rejected, (state) => {
+      state.isLoginPending = false;
+    });
+
+    builder.addCase(login.fulfilled, (state) => {
+      state.isAuthenticated = true;
+      state.isLoginPending = false;
+    });
+
+    builder.addCase(refreshToken.fulfilled, (state, action) => {
+      const [accessToken, refreshToken, expiresIn] = action.payload;
+      state.accessToken = accessToken;
+      state.refreshToken = refreshToken;
+      state.expiresIn = expiresInToTimestamp(expiresIn);
       const store = new AuthStore();
       store.clearCodeVerifier();
       store.setTokens(accessToken, refreshToken, expiresIn);

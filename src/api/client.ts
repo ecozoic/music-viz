@@ -1,5 +1,7 @@
-import { getRefreshToken } from '../auth/accessToken';
-import AuthStore from '../auth/store';
+import { AsyncThunk } from '@reduxjs/toolkit';
+
+import { isAccessTokenExpired } from '../auth/accessToken';
+import { AppDispatch, RootState } from '../app/store';
 
 type SpotifyObject = {
   external_urls: Readonly<{
@@ -8,7 +10,7 @@ type SpotifyObject = {
   href: string;
   id: string;
   uri: string;
-  type: 'album' | 'artist' | 'track';
+  type: 'album' | 'artist' | 'track' | 'user';
 };
 
 type SpotifyImages = Readonly<{
@@ -169,17 +171,25 @@ export default class SpotifyClient {
     search: 'https://api.spotify.com/v1/search',
   };
 
-  readonly #store: AuthStore;
+  readonly #dispatch: AppDispatch;
+  readonly #getState: () => RootState;
+  readonly #refreshToken: AsyncThunk<[string, string, number], void, any>;
 
-  constructor() {
-    this.#store = new AuthStore();
+  constructor(
+    getState: () => RootState,
+    dispatch: AppDispatch,
+    refreshToken: AsyncThunk<[string, string, number], void, any>,
+  ) {
+    this.#dispatch = dispatch;
+    this.#getState = getState;
+    this.#refreshToken = refreshToken;
   }
 
-  async #get(url: URL): Promise<any> {
-    if (this.#store.isAccessTokenExpired()) {
-      await getRefreshToken();
+  async #get(url: URL): Promise<unknown> {
+    if (this.#isAccessTokenExpired()) {
+      await this.#dispatch(this.#refreshToken());
     }
-    const accessToken = this.#store.getAccessToken();
+    const accessToken = this.#getState().auth.accessToken!;
     const params: RequestInit = {
       method: 'GET',
       headers: {
@@ -194,8 +204,12 @@ export default class SpotifyClient {
     return url.replace('{id}', id);
   }
 
+  #isAccessTokenExpired(): boolean {
+    return isAccessTokenExpired(this.#getState().auth.expiresIn);
+  }
+
   async me(): Promise<Me> {
-    return this.#get(new URL(this.#urlMap.me));
+    return this.#get(new URL(this.#urlMap.me)) as Promise<Me>;
   }
 
   async search(
@@ -211,12 +225,12 @@ export default class SpotifyClient {
     };
     const url = new URL(this.#urlMap.search);
     url.search = new URLSearchParams(params).toString();
-    return this.#get(url);
+    return this.#get(url) as Promise<SearchResults>;
   }
 
   async artistByID(id: string): Promise<Artist> {
     const url = new URL(this.#replaceIdToken(this.#urlMap.artistByID, id));
-    return this.#get(url);
+    return this.#get(url) as Promise<Artist>;
   }
 
   async albumsByArtistID(
@@ -232,12 +246,12 @@ export default class SpotifyClient {
       offset: offset.toString(),
     };
     url.search = new URLSearchParams(params).toString();
-    return this.#get(url);
+    return this.#get(url) as Promise<Page<SimplifiedAlbum>>;
   }
 
   async albumByID(id: string): Promise<Album> {
     const url = new URL(this.#replaceIdToken(this.#urlMap.albumByID, id));
-    return this.#get(url);
+    return this.#get(url) as Promise<Album>;
   }
 
   async tracksByAlbumID(
@@ -251,11 +265,11 @@ export default class SpotifyClient {
       offset: offset.toString(),
     };
     url.search = new URLSearchParams(params).toString();
-    return this.#get(url);
+    return this.#get(url) as Promise<Page<SimplifiedTrack>>;
   }
 
   async trackByID(id: string): Promise<Track> {
     const url = new URL(this.#replaceIdToken(this.#urlMap.trackByID, id));
-    return this.#get(url);
+    return this.#get(url) as Promise<Track>;
   }
 }
