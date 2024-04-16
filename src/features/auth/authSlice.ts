@@ -9,7 +9,7 @@ import {
   getRefreshToken,
 } from '../../auth/accessToken';
 import SpotifyClient from '../../api/client';
-import { AppDispatch, RootState } from '../../app/store';
+import { RootState } from '../../app/store';
 
 export interface AuthState {
   isAuthenticated: boolean;
@@ -67,11 +67,10 @@ export const refreshToken = createAsyncThunk(
 const requestCurrentUserProfile = createAsyncThunk(
   'auth/requestCurrentUserProfileStatus',
   async (_arg, thunkAPI) => {
-    // TODO: spotify client redux integration
     const client = new SpotifyClient(
-      thunkAPI.getState as () => RootState,
-      thunkAPI.dispatch as AppDispatch,
-      refreshToken,
+      () => (thunkAPI.getState() as RootState).auth.accessToken!,
+      () => (thunkAPI.getState() as RootState).auth.expiresIn,
+      () => thunkAPI.dispatch(refreshToken()),
     );
     return await client.me();
   },
@@ -123,7 +122,7 @@ export const authSlice = createSlice({
       state.expiresIn = expiresInToTimestamp(expiresIn);
       const store = new AuthStore();
       store.clearCodeVerifier();
-      store.setTokens(accessToken, refreshToken, expiresIn);
+      store.setTokens(state.accessToken, state.refreshToken, state.expiresIn);
     });
 
     builder.addCase(requestCurrentUserProfile.fulfilled, (state, action) => {
@@ -150,7 +149,7 @@ export const authSlice = createSlice({
       state.expiresIn = expiresInToTimestamp(expiresIn);
       const store = new AuthStore();
       store.clearCodeVerifier();
-      store.setTokens(accessToken, refreshToken, expiresIn);
+      store.setTokens(state.accessToken, state.refreshToken, state.expiresIn);
     });
   },
 });

@@ -1,8 +1,3 @@
-import { AsyncThunk } from '@reduxjs/toolkit';
-
-import { isAccessTokenExpired } from '../auth/accessToken';
-import { AppDispatch, RootState } from '../app/store';
-
 type SpotifyObject = {
   external_urls: Readonly<{
     spotify: string;
@@ -171,25 +166,25 @@ export default class SpotifyClient {
     search: 'https://api.spotify.com/v1/search',
   };
 
-  readonly #dispatch: AppDispatch;
-  readonly #getState: () => RootState;
-  readonly #refreshToken: AsyncThunk<[string, string, number], void, any>;
+  readonly #getAccessToken: () => string;
+  readonly #getAccessTokenExpiration: () => number;
+  readonly #refreshToken: () => Promise<unknown>;
 
   constructor(
-    getState: () => RootState,
-    dispatch: AppDispatch,
-    refreshToken: AsyncThunk<[string, string, number], void, any>,
+    getAccessToken: () => string,
+    getAccessTokenExpiration: () => number,
+    refreshToken: () => Promise<unknown>,
   ) {
-    this.#dispatch = dispatch;
-    this.#getState = getState;
+    this.#getAccessToken = getAccessToken;
+    this.#getAccessTokenExpiration = getAccessTokenExpiration;
     this.#refreshToken = refreshToken;
   }
 
   async #get(url: URL): Promise<unknown> {
     if (this.#isAccessTokenExpired()) {
-      await this.#dispatch(this.#refreshToken());
+      await this.#refreshToken();
     }
-    const accessToken = this.#getState().auth.accessToken!;
+    const accessToken = this.#getAccessToken();
     const params: RequestInit = {
       method: 'GET',
       headers: {
@@ -205,7 +200,7 @@ export default class SpotifyClient {
   }
 
   #isAccessTokenExpired(): boolean {
-    return isAccessTokenExpired(this.#getState().auth.expiresIn);
+    return Date.now() > this.#getAccessTokenExpiration();
   }
 
   async me(): Promise<Me> {

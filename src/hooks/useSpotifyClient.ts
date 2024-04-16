@@ -12,9 +12,9 @@ function useSpotifyClient() {
 
   const client = useMemo(() => {
     return new SpotifyClient(
-      store.getState as () => RootState,
-      dispatch,
-      refreshToken,
+      () => (store.getState() as RootState).auth.accessToken!,
+      () => (store.getState() as RootState).auth.expiresIn,
+      () => dispatch(refreshToken()),
     );
   }, [store.getState, dispatch]);
 

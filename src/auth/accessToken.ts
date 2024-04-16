@@ -12,10 +12,6 @@ export function expiresInToTimestamp(expiresIn: number): number {
   return Date.now() + expiresIn * 1000;
 }
 
-export function isAccessTokenExpired(expiresIn: number): boolean {
-  return Date.now() > expiresIn;
-}
-
 export async function getAccessToken(
   code: string,
   verifier: string,

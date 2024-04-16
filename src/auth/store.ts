@@ -1,5 +1,4 @@
 import { STORAGE_KEYS } from './constants';
-import { expiresInToTimestamp } from './accessToken';
 
 class AuthStore {
   setCodeVerifier(verifier: string): void {
@@ -25,10 +24,7 @@ class AuthStore {
   ): void {
     window.localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
     window.localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-    window.localStorage.setItem(
-      STORAGE_KEYS.EXPIRES_IN,
-      expiresInToTimestamp(expiresIn).toString(),
-    );
+    window.localStorage.setItem(STORAGE_KEYS.EXPIRES_IN, expiresIn.toString());
   }
 
   getRefreshToken(): string {
