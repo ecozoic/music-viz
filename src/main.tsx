@@ -19,7 +19,8 @@ import SpotifyClientProvider from './api/SpotifyClientProvider.tsx';
 import AuthGuard from './routes/AuthGuard.tsx';
 
 // TODO: search
-// TODO: charts https://react-charts.tanstack.com/
+// TODO: optimize query waterfall
+// TODO: full navigation
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5 * 60 * 1000 } },

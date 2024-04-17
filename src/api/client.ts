@@ -131,7 +131,7 @@ type SimplifiedTrack = BaseTrack &
     artists: ReadonlyArray<SimplifiedArtist>;
   }>;
 
-type Track = BaseTrack &
+export type Track = BaseTrack &
   SpotifyExternalIDs &
   SpotifyPopularity &
   Readonly<{
@@ -237,6 +237,7 @@ export default class SpotifyClient {
       this.#replaceIdToken(this.#urlMap.albumsByArtistID, id),
     );
     const params = {
+      include_groups: 'album',
       limit: limit.toString(),
       offset: offset.toString(),
     };
