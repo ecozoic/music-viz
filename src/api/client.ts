@@ -170,6 +170,9 @@ export default class SpotifyClient {
   readonly #getAccessTokenExpiration: () => number | null;
   readonly #refreshToken: () => Promise<unknown>;
 
+  #isRefreshPending: boolean = false;
+  #refreshPendingPromise: Promise<void> = Promise.resolve();
+
   constructor(
     getAccessToken: () => string | null,
     getAccessTokenExpiration: () => number | null,
@@ -182,7 +185,16 @@ export default class SpotifyClient {
 
   async #get(url: URL): Promise<unknown> {
     if (this.#isAccessTokenExpired()) {
-      await this.#refreshToken();
+      if (this.#isRefreshPending) {
+        await this.#refreshPendingPromise;
+      } else {
+        this.#isRefreshPending = true;
+        this.#refreshPendingPromise = new Promise(async (resolve) => {
+          await this.#refreshToken();
+          this.#isRefreshPending = false;
+          resolve();
+        });
+      }
     }
     const accessToken = this.#getAccessToken()!;
     const params: RequestInit = {
