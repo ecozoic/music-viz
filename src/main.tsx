@@ -16,8 +16,8 @@ import { fromStore } from './api/factory.ts';
 import './index.css';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import SpotifyClientProvider from './api/SpotifyClientProvider.tsx';
+import AuthGuard from './routes/AuthGuard.tsx';
 
-// TODO: auth guard https://developer.auth0.com/resources/guides/spa/react/basic-authentication#add-route-guards-to-react
 // TODO: search
 // TODO: charts https://react-charts.tanstack.com/
 
@@ -38,12 +38,12 @@ const router = createBrowserRouter([
   },
   {
     path: PATHS.ARTIST,
-    element: <Artist />,
+    element: <AuthGuard element={<Artist />} />,
     loader: artistLoader(spotifyClient, queryClient),
   },
   {
     path: PATHS.ALBUM,
-    element: <Album />,
+    element: <AuthGuard element={<Album />} />,
     loader: albumLoader(spotifyClient, queryClient),
   },
 ]);
