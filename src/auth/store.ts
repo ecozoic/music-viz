@@ -27,26 +27,32 @@ class AuthStore {
     window.localStorage.setItem(STORAGE_KEYS.EXPIRES_IN, expiresIn.toString());
   }
 
-  getRefreshToken(): string {
-    const token = window.localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-    if (token == null) {
-      throw new Error('No refresh token set');
-    }
-    return token;
+  setSpotifyUser(username: string): void {
+    window.localStorage.setItem(STORAGE_KEYS.SPOTIFY_USER, username);
   }
 
-  getAccessToken(): string {
-    const token = window.localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    if (token == null) {
-      throw new Error('No access token set');
-    }
-    return token;
+  getRefreshToken(): string | null {
+    return window.localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+  }
+
+  getAccessToken(): string | null {
+    return window.localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+  }
+
+  getSpotifyUser(): string | null {
+    return window.localStorage.getItem(STORAGE_KEYS.SPOTIFY_USER);
+  }
+
+  getExpiresIn(): number | null {
+    const expiresIn = window.localStorage.getItem(STORAGE_KEYS.EXPIRES_IN);
+    return expiresIn === null ? expiresIn : Number(expiresIn);
   }
 
   logout(): void {
     window.localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     window.localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     window.localStorage.removeItem(STORAGE_KEYS.EXPIRES_IN);
+    window.localStorage.removeItem(STORAGE_KEYS.SPOTIFY_USER);
   }
 }
 

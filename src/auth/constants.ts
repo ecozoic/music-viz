@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'access_token',
   REFRESH_TOKEN: 'refresh_token',
   EXPIRES_IN: 'expires_in',
+  SPOTIFY_USER: 'spotify_user',
 };
 
 export const REDIRECT_URI = 'http://localhost:5173/callback';

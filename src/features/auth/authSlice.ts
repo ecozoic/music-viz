@@ -17,16 +17,29 @@ export interface AuthState {
   displayName: string | null;
   accessToken: string | null;
   refreshToken: string | null;
-  expiresIn: number;
+  expiresIn: number | null;
 }
 
-const initialState: AuthState = {
-  isAuthenticated: false,
-  isLoginPending: false,
-  accessToken: null,
-  displayName: null,
-  refreshToken: null,
-  expiresIn: 0,
+const getInitialState: () => AuthState = () => {
+  const store = new AuthStore();
+
+  const accessToken = store.getAccessToken() ?? null;
+  const displayName = store.getSpotifyUser() ?? null;
+  const refreshToken = store.getRefreshToken() ?? null;
+  const expiresIn = store.getExpiresIn() ?? null;
+
+  return {
+    isAuthenticated:
+      accessToken !== null &&
+      displayName !== null &&
+      refreshToken !== null &&
+      expiresIn !== null,
+    isLoginPending: false,
+    accessToken,
+    displayName,
+    refreshToken,
+    expiresIn,
+  };
 };
 
 const genCodeVerifierAndChallenge = createAsyncThunk(
@@ -68,7 +81,7 @@ const requestCurrentUserProfile = createAsyncThunk(
   'auth/requestCurrentUserProfileStatus',
   async (_arg, thunkAPI) => {
     const client = new SpotifyClient(
-      () => (thunkAPI.getState() as RootState).auth.accessToken!,
+      () => (thunkAPI.getState() as RootState).auth.accessToken,
       () => (thunkAPI.getState() as RootState).auth.expiresIn,
       () => thunkAPI.dispatch(refreshToken()),
     );
@@ -94,12 +107,12 @@ export const login = createAsyncThunk(
 
 export const authSlice = createSlice({
   name: 'auth',
-  initialState,
+  initialState: getInitialState(),
   reducers: {
     logout: (state) => {
       state.isAuthenticated = false;
       state.accessToken = null;
-      state.expiresIn = 0;
+      state.expiresIn = null;
       state.refreshToken = null;
       state.displayName = null;
       const store = new AuthStore();
@@ -127,6 +140,8 @@ export const authSlice = createSlice({
 
     builder.addCase(requestCurrentUserProfile.fulfilled, (state, action) => {
       state.displayName = action.payload.display_name;
+      const store = new AuthStore();
+      store.setSpotifyUser(state.displayName);
     });
 
     builder.addCase(login.pending, (state) => {

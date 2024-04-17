@@ -166,13 +166,13 @@ export default class SpotifyClient {
     search: 'https://api.spotify.com/v1/search',
   };
 
-  readonly #getAccessToken: () => string;
-  readonly #getAccessTokenExpiration: () => number;
+  readonly #getAccessToken: () => string | null;
+  readonly #getAccessTokenExpiration: () => number | null;
   readonly #refreshToken: () => Promise<unknown>;
 
   constructor(
-    getAccessToken: () => string,
-    getAccessTokenExpiration: () => number,
+    getAccessToken: () => string | null,
+    getAccessTokenExpiration: () => number | null,
     refreshToken: () => Promise<unknown>,
   ) {
     this.#getAccessToken = getAccessToken;
@@ -184,7 +184,7 @@ export default class SpotifyClient {
     if (this.#isAccessTokenExpired()) {
       await this.#refreshToken();
     }
-    const accessToken = this.#getAccessToken();
+    const accessToken = this.#getAccessToken()!;
     const params: RequestInit = {
       method: 'GET',
       headers: {
@@ -200,7 +200,7 @@ export default class SpotifyClient {
   }
 
   #isAccessTokenExpired(): boolean {
-    return Date.now() > this.#getAccessTokenExpiration();
+    return Date.now() > this.#getAccessTokenExpiration()!;
   }
 
   async me(): Promise<Me> {
