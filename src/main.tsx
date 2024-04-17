@@ -15,13 +15,15 @@ import { fromStore } from './api/factory.ts';
 
 import './index.css';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import SpotifyClientProvider from './api/SpotifyClientProvider.tsx';
 
 // TODO: auth guard https://developer.auth0.com/resources/guides/spa/react/basic-authentication#add-route-guards-to-react
-// TODO: react query https://tkdodo.eu/blog/react-query-meets-react-router
 // TODO: search
 // TODO: charts https://react-charts.tanstack.com/
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 5 * 60 * 1000 } },
+});
 const spotifyClient = fromStore(store);
 
 const router = createBrowserRouter([
@@ -50,8 +52,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        <ReactQueryDevtools initialIsOpen={false} />
+        <SpotifyClientProvider client={spotifyClient}>
+          <RouterProvider router={router} />
+          <ReactQueryDevtools initialIsOpen={false} />
+        </SpotifyClientProvider>
       </QueryClientProvider>
     </Provider>
   </React.StrictMode>,

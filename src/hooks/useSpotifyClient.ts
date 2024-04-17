@@ -1,24 +1,11 @@
-import { useMemo } from 'react';
-import { useStore } from 'react-redux';
+import { useContext } from 'react';
 
-import { useAppDispatch } from '../app/hooks';
-import { refreshToken } from '../features/auth/authSlice';
-import SpotifyClient from '../api/client';
-import { AppStore } from '../app/store';
+import { SpotifyClientContext } from '../api/SpotifyClientProvider';
 
 function useSpotifyClient() {
-  const dispatch = useAppDispatch();
-  const store = useStore() as AppStore;
+  const client = useContext(SpotifyClientContext);
 
-  const client = useMemo(() => {
-    return new SpotifyClient(
-      () => store.getState().auth.accessToken,
-      () => store.getState().auth.expiresIn,
-      () => dispatch(refreshToken()),
-    );
-  }, []);
-
-  return client;
+  return client!;
 }
 
 export default useSpotifyClient;

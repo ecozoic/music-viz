@@ -9,26 +9,43 @@ const artistQuery = (spotifyClient: SpotifyClient, artistID: string) => ({
   queryFn: async () => {
     return spotifyClient.artistByID(artistID);
   },
-  staleTime: 10 * 1000,
+});
+
+const albumsQuery = (spotifyClient: SpotifyClient, artistID: string) => ({
+  queryKey: ['artists', artistID, 'albums'],
+  queryFn: async () => {
+    return spotifyClient.albumsByArtistID(artistID);
+  },
 });
 
 export const loader =
   (spotifyClient: SpotifyClient, queryClient: QueryClient) =>
   async ({ params }: LoaderFunctionArgs<any>) => {
-    const query = artistQuery(spotifyClient, params.artistID!);
-    return (
-      queryClient.getQueryData(query.queryKey) ??
-      (await queryClient.fetchQuery(query))
-    );
+    const artist = artistQuery(spotifyClient, params.artistID!);
+    const albums = albumsQuery(spotifyClient, params.artistID!);
+    return Promise.all([
+      queryClient.ensureQueryData(artist),
+      queryClient.ensureQueryData(albums),
+    ]);
   };
 
 function Artist() {
   const client = useSpotifyClient();
   const params = useParams();
-  const { data, isSuccess } = useQuery(artistQuery(client, params.artistID!));
+  const { data: artistData, isSuccess: artistIsSuccess } = useQuery(
+    artistQuery(client, params.artistID!),
+  );
+  const { data: albumsData, isSuccess: albumsIsSuccess } = useQuery(
+    albumsQuery(client, params.artistID!),
+  );
 
-  if (isSuccess) {
-    return <pre>{JSON.stringify(data)}</pre>;
+  if (artistIsSuccess && albumsIsSuccess) {
+    return (
+      <>
+        <pre>{JSON.stringify(artistData)}</pre>
+        <pre>{JSON.stringify(albumsData)}</pre>
+      </>
+    );
   }
 }
 
