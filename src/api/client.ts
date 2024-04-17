@@ -74,7 +74,7 @@ type SimplifiedArtist = SpotifyObject &
     type: 'artist';
   }>;
 
-type Artist = SimplifiedArtist &
+export type Artist = SimplifiedArtist &
   SpotifyImages &
   SpotifyFollowers &
   SpotifyGenres &
@@ -94,7 +94,7 @@ type SimplifiedAlbum = SpotifyObject &
     artists: ReadonlyArray<SimplifiedArtist>;
   }>;
 
-type Album = SimplifiedAlbum &
+export type Album = SimplifiedAlbum &
   SpotifyExternalIDs &
   SpotifyGenres &
   SpotifyPopularity &

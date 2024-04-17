@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { useAppDispatch, useAppSelector } from './app/hooks';
 import {
   logout,
@@ -9,6 +11,7 @@ import useSpotifyClient from './hooks/useSpotifyClient';
 import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
+import { PATHS } from './routes/constants';
 
 function App() {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -61,6 +64,24 @@ function App() {
             >
               Request Profile
             </button>
+          </>
+        )}
+        {isAuthenticated && (
+          <>
+            <div>
+              <Link
+                to={PATHS.ARTIST.replace(':artistID', '3jOstUTkEu2JkjvRdBA5Gu')}
+              >
+                Weezer
+              </Link>
+            </div>
+            <div>
+              <Link
+                to={PATHS.ALBUM.replace(':albumID', '1xpGyKyV26uPstk1Elgp9Q')}
+              >
+                Blue
+              </Link>
+            </div>
           </>
         )}
       </div>
