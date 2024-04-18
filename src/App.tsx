@@ -74,13 +74,6 @@ function App() {
               Weezer
             </Link>
           </div>
-          <div>
-            <Link
-              to={PATHS.ALBUM.replace(':albumID', '1xpGyKyV26uPstk1Elgp9Q')}
-            >
-              Blue
-            </Link>
-          </div>
         </>
       </div>
     </>

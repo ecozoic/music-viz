@@ -5,6 +5,7 @@ import { Track } from '../api/client';
 
 type Props = {
   tracks: ReadonlyArray<Track>;
+  color: string;
 };
 
 type TrackPopularity = {
@@ -17,7 +18,7 @@ type Series = {
   data: TrackPopularity[];
 };
 
-function AlbumChart({ tracks }: Props) {
+function AlbumChart({ tracks, color }: Props) {
   const data = useMemo((): TrackPopularity[] => {
     return tracks.map((track) => ({
       number: track.track_number,
@@ -47,7 +48,16 @@ function AlbumChart({ tracks }: Props) {
     [],
   );
 
-  return <Chart options={{ data: series, primaryAxis, secondaryAxes }} />;
+  return (
+    <Chart
+      options={{
+        data: series,
+        primaryAxis,
+        secondaryAxes,
+        defaultColors: [color],
+      }}
+    />
+  );
 }
 
 export default AlbumChart;

@@ -1,10 +1,11 @@
-import { LoaderFunctionArgs, useParams } from 'react-router-dom';
+import { Link, LoaderFunctionArgs, useParams } from 'react-router-dom';
 import { QueryClient, useQueries, useQuery } from '@tanstack/react-query';
 
 import SpotifyClient from '../api/client';
 import useSpotifyClient from '../hooks/useSpotifyClient';
-import { albumQuery } from './Album';
+import { albumQuery, albumColorQuery } from './Album';
 import ArtistChart from '../components/ArtistChart';
+import { PATHS } from './constants';
 
 const artistQuery = (spotifyClient: SpotifyClient, artistID: string) => ({
   queryKey: ['artists', artistID],
@@ -31,16 +32,16 @@ export const loader =
       queryClient.ensureQueryData(albums),
     ]);
 
-    const albumsData = await Promise.all(
+    await Promise.all(
       simplifiedAlbumsData.items.map((item) => {
         const album = albumQuery(spotifyClient, item.id);
-        return queryClient.ensureQueryData(album);
+        return queryClient.prefetchQuery(album);
       }),
     );
 
     return {
       artist: artistData,
-      albums: albumsData,
+      simplifiedAlbums: simplifiedAlbumsData,
     };
   };
 
@@ -59,16 +60,32 @@ function Artist() {
     ),
   });
 
+  const colorResults = useQueries({
+    queries: simplifiedAlbumsData!.items.map((item) =>
+      albumColorQuery(item.id, item.images[1].url),
+    ),
+  });
+
   if (artistIsSuccess && simplifiedAlbumsIsSuccess) {
     const albums = results.map((result) => result.data!);
     return (
       <>
+        <div>
+          <Link to={PATHS.ROOT}>Home</Link>
+        </div>
         <img
           src={artistData.images[1].url}
           height={artistData.images[1].height!}
           width={artistData.images[1].width!}
         />
         <h1>{artistData.name}</h1>
+        <div>
+          {albums.map((album) => (
+            <Link key={album.id} to={PATHS.ALBUM.replace(':albumID', album.id)}>
+              {album.name}
+            </Link>
+          ))}
+        </div>
         <ArtistChart albums={albums} />
       </>
     );

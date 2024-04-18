@@ -1,9 +1,11 @@
-import { LoaderFunctionArgs, useParams } from 'react-router-dom';
+import { Link, LoaderFunctionArgs, useParams } from 'react-router-dom';
 import { QueryClient, useQueries, useQuery } from '@tanstack/react-query';
+import { FastAverageColor } from 'fast-average-color';
 
 import SpotifyClient from '../api/client';
 import useSpotifyClient from '../hooks/useSpotifyClient';
 import AlbumChart from '../components/AlbumChart';
+import { PATHS } from './constants';
 
 // https://tkdodo.eu/blog/react-query-meets-react-router
 
@@ -28,6 +30,13 @@ const trackQuery = (spotifyClient: SpotifyClient, trackID: string) => ({
   },
 });
 
+export const albumColorQuery = (albumID: string, imageUrl: string) => ({
+  queryKey: ['albums', albumID, 'color'],
+  queryFn: async () => {
+    return await new FastAverageColor().getColorAsync(imageUrl);
+  },
+});
+
 export const loader =
   (spotifyClient: SpotifyClient, queryClient: QueryClient) =>
   async ({ params }: LoaderFunctionArgs<any>) => {
@@ -39,22 +48,23 @@ export const loader =
       queryClient.ensureQueryData(tracks),
     ]);
 
-    const tracksData = await Promise.all(
+    await Promise.all(
       simplifiedTracksData.items.map((item) => {
         const track = trackQuery(spotifyClient, item.id);
-        return queryClient.ensureQueryData(track);
+        return queryClient.prefetchQuery(track);
       }),
     );
 
     return {
       album: albumData,
-      tracks: tracksData,
+      simplifiedTracks: simplifiedTracksData,
     };
   };
 
 function Album() {
   const client = useSpotifyClient();
   const params = useParams();
+
   const { data: albumData, isSuccess: albumIsSuccess } = useQuery(
     albumQuery(client, params.albumID!),
   );
@@ -67,18 +77,28 @@ function Album() {
     ),
   });
 
-  if (albumIsSuccess && simplifiedTracksIsSuccess) {
+  const { data: colorData, isSuccess: colorIsSuccess } = useQuery(
+    albumColorQuery(params.albumID!, albumData!.images[1].url),
+  );
+
+  if (albumIsSuccess && simplifiedTracksIsSuccess && colorIsSuccess) {
     const tracks = results.map((result) => result.data!);
     return (
       <>
+        <div>
+          <Link to={PATHS.ROOT}>Home</Link>
+          <Link to={PATHS.ARTIST.replace(':artistID', albumData.artists[0].id)}>
+            {albumData.artists[0].name}
+          </Link>
+        </div>
         <img
           src={albumData.images[1].url}
           height={albumData.images[1].height!}
           width={albumData.images[1].width!}
         />
-        <h1>{albumData.name}</h1>
+        <h1 style={{ color: colorData.hex ?? undefined }}>{albumData.name}</h1>
         <h2>{albumData.release_date}</h2>
-        <AlbumChart tracks={tracks} />
+        <AlbumChart tracks={tracks} color={colorData.hex} />
       </>
     );
   }
